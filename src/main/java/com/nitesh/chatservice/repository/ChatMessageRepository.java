@@ -18,7 +18,17 @@ import java.util.List;
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
 
     /**
-     * Get all messages in a conversation, ordered chronologically.
+     * Get the latest messages in a conversation, ordered descending (newest first).
+     */
+    List<ChatMessage> findByConversationIdOrderByIdDesc(Long conversationId, org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * Get messages in a conversation older than the given cursor ID, ordered descending.
+     */
+    List<ChatMessage> findByConversationIdAndIdLessThanOrderByIdDesc(Long conversationId, Long id, org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * Legacy method: Get all messages in a conversation, ordered chronologically.
      */
     List<ChatMessage> findByConversationIdOrderByCreatedAtAsc(Long conversationId);
 

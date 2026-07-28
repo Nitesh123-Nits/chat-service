@@ -40,9 +40,11 @@ public class ChatController {
     @GetMapping("/{conversationId}/messages")
     public ResponseEntity<List<MessageResponse>> getMessages(
             @RequestHeader("X-User-Id") Long userId,
-            @PathVariable Long conversationId) {
+            @PathVariable Long conversationId,
+            @RequestParam(required = false) Long cursor,
+            @RequestParam(defaultValue = "20") int limit) {
         
-        List<MessageResponse> responses = chatService.getMessages(conversationId, userId);
+        List<MessageResponse> responses = chatService.getMessages(conversationId, userId, cursor, limit);
         return ResponseEntity.ok(responses);
     }
 

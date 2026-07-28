@@ -8,10 +8,13 @@ import com.nitesh.chatservice.entity.ChatMessage;
 import com.nitesh.chatservice.entity.Conversation;
 import com.nitesh.chatservice.entity.MessageStatus;
 import com.nitesh.chatservice.entity.User;
+import com.nitesh.chatservice.exception.BadRequestException;
+import com.nitesh.chatservice.exception.ForbiddenException;
 import com.nitesh.chatservice.exception.ResourceNotFoundException;
 import com.nitesh.chatservice.repository.ChatMessageRepository;
 import com.nitesh.chatservice.repository.ConversationRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,7 +62,7 @@ public class ChatService {
         // Verify sender is part of conversation
         if (!conversation.getParticipant1().getId().equals(senderId) &&
             !conversation.getParticipant2().getId().equals(senderId)) {
-            throw new IllegalArgumentException("User is not a participant in this conversation");
+            throw new ForbiddenException("User is not a participant in this conversation");
         }
 
         ChatMessage message = ChatMessage.builder()
@@ -77,15 +80,22 @@ public class ChatService {
         return mapToResponse(message);
     }
 
-    public List<MessageResponse> getMessages(Long conversationId, Long userId) {
-        // Verify user exists and is part of conversation (optional but good practice)
+    public List<MessageResponse> getMessages(Long conversationId, Long userId, Long cursor, int limit) {
         Conversation conversation = getConversationEntity(conversationId);
         if (!conversation.getParticipant1().getId().equals(userId) &&
             !conversation.getParticipant2().getId().equals(userId)) {
-             throw new IllegalArgumentException("User is not a participant in this conversation");
+             throw new ForbiddenException("User is not a participant in this conversation");
         }
         
-        return chatMessageRepository.findByConversationIdOrderByCreatedAtAsc(conversationId).stream()
+        List<ChatMessage> messages;
+        PageRequest pageRequest = PageRequest.of(0, limit);
+        if (cursor == null) {
+            messages = chatMessageRepository.findByConversationIdOrderByIdDesc(conversationId, pageRequest);
+        } else {
+            messages = chatMessageRepository.findByConversationIdAndIdLessThanOrderByIdDesc(conversationId, cursor, pageRequest);
+        }
+        
+        return messages.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
